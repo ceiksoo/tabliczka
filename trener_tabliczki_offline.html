@@ -1,0 +1,487 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tabliczka mnożenia i dzielenia – trener (offline)</title>
+  <meta name="description" content="Prosta strona do nauki tabliczki mnożenia i dzielenia dla dziecka (kl. 4). Działa offline, bez instalacji." />
+  <style>
+    /* Minimal, czytelny, mobile-first układ bez zewnętrznych bibliotek */
+    :root{
+      --bg:#f7fafc;
+      --card:#ffffff;
+      --ink:#0f172a;
+      --muted:#475569;
+      --accent:#0ea5e9;
+      --ok:#16a34a;
+      --warn:#f59e0b;
+      --err:#ef4444;
+      --border:#e2e8f0;
+      --shadow:0 8px 24px rgba(2,6,23,.08);
+      --radius:14px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans", "Helvetica Neue", Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background:linear-gradient(180deg,#f9fbff, #eef4ff);
+      color:var(--ink);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+    .wrap{
+      max-width:860px;
+      margin:0 auto;
+      padding:16px;
+      display:flex;
+      flex-direction:column;
+      min-height:100dvh;
+      gap:16px;
+    }
+    header{
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+    }
+    h1{font-size:clamp(22px, 3.4vw, 32px); margin:0}
+    .badges{display:flex; gap:8px; flex-wrap:wrap}
+    .badge{font-size:12px; padding:6px 10px; border-radius:999px; background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd}
+    nav{
+      display:flex; gap:8px; flex-wrap:wrap;
+      background:rgba(255,255,255,.7); border:1px solid var(--border); border-radius:999px; padding:6px;
+      backdrop-filter:saturate(1.3) blur(6px);
+    }
+    nav button{
+      appearance:none; border:0; padding:8px 12px; border-radius:999px; background:transparent; color:var(--muted);
+      font-weight:600; cursor:pointer;
+    }
+    nav button[aria-current="page"]{ background:var(--card); color:var(--ink); border:1px solid var(--border); box-shadow:var(--shadow) }
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:16px;
+    }
+    h2{margin-top:0; font-size:clamp(18px, 2.8vw, 24px)}
+    p{line-height:1.6; color:var(--muted)}
+    .grid{display:grid; gap:10px}
+    .grid.cols-2{grid-template-columns:repeat(2, minmax(0,1fr))}
+    .grid.cols-3{grid-template-columns:repeat(3, minmax(0,1fr))}
+    @media (max-width:640px){ .grid.cols-2,.grid.cols-3{grid-template-columns:1fr} }
+
+    .tbl{border-collapse:collapse; width:100%;}
+    .tbl th,.tbl td{border:1px solid var(--border); padding:8px; text-align:center}
+    .tbl th{background:#f1f5f9; font-weight:700}
+    .kbd{font-family:ui-monospace, SFMono-Regular, Menlo, monospace; background:#0ea5e91a; border:1px solid #bae6fd; padding:2px 6px; border-radius:6px}
+    .muted{color:var(--muted)}
+    .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+    .grow{flex:1}
+    input[type="number"], input[type="text"]{
+      width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:10px; font-size:16px;
+    }
+    .btn{
+      padding:10px 14px; border-radius:10px; border:1px solid var(--border); background:#fff; cursor:pointer; font-weight:700;
+    }
+    .btn.primary{ background:linear-gradient(180deg,#e0f2fe,#bae6fd); border-color:#7dd3fc }
+    .btn.ok{ background:#dcfce7; border-color:#86efac }
+    .btn.warn{ background:#fef3c7; border-color:#fde68a }
+    .btn.err{ background:#fee2e2; border-color:#fecaca }
+    .stats{display:flex; gap:10px; flex-wrap:wrap}
+    .stat{padding:8px 12px; border:1px solid var(--border); border-radius:10px; background:#f8fafc}
+    footer{margin-top:auto; text-align:center; color:var(--muted); font-size:13px}
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Trener tabliczki – mnożenie & dzielenie</h1>
+      <div class="badges">
+        <span class="badge">offline</span>
+        <span class="badge">bez instalacji</span>
+        <span class="badge">mobile‑first</span>
+      </div>
+    </header>
+
+    <!-- Prosty „router”: sekcje pokazywane/ukrywane JS-em -->
+    <nav aria-label="Sekcje">
+      <button class="tab" data-target="intro" aria-current="page">Start</button>
+      <button class="tab" data-target="tricks">Triki</button>
+      <button class="tab" data-target="tables">Tabele</button>
+      <button class="tab" data-target="practice">Ćwiczenia</button>
+      <button class="tab" data-target="speed">Test na czas</button>
+      <button class="tab" data-target="parent">Dla rodzica</button>
+    </nav>
+
+    <!-- START -->
+    <section id="intro" class="card" role="region" aria-labelledby="intro-h">
+      <h2 id="intro-h">Jak z tego korzystać</h2>
+      <div class="grid cols-2">
+        <div>
+          <p><strong>Plan 10‑minutowy:</strong></p>
+          <ol>
+            <li>Rozgrzewka: przejrzyj <a href="#tables" data-link>tabele</a> ×2, ×5, ×10.</li>
+            <li>Trening: 10 przykładów w <a href="#practice" data-link>Ćwiczeniach</a>.</li>
+            <li>Finał: <a href="#speed" data-link>Test na czas</a> 60 s.</li>
+          </ol>
+          <p class="muted">Wskazówka: dzielenie to „odwrócone mnożenie”: skoro <span class="kbd">6×4=24</span>, to <span class="kbd">24÷6=4</span>.</p>
+        </div>
+        <div>
+          <div class="stats" aria-live="polite" id="stats">
+            <div class="stat">Ostatni wynik (test): <strong id="stat-last">–</strong></div>
+            <div class="stat">Najlepszy wynik: <strong id="stat-best">–</strong></div>
+            <div class="stat">Dni z rzędu: <strong id="stat-streak">0</strong></div>
+          </div>
+          <p class="muted">Dane są zapisywane tylko w tej przeglądarce (localStorage).</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- TRICKS -->
+    <section id="tricks" class="card" hidden role="region" aria-labelledby="tricks-h">
+      <h2 id="tricks-h">Triki – myślenie zamiast wkuwania</h2>
+      <ul>
+        <li><strong>×10</strong> – dopisz zero (7×10 = 70).</li>
+        <li><strong>×5</strong> – końcówka 0 lub 5; połowa z ×10 (7×5 = połowa z 70 = 35).</li>
+        <li><strong>×9</strong> – suma cyfr wyniku = 9 (9×4=36 → 3+6=9).</li>
+        <li><strong>×4 i ×8</strong> – kolejne podwojenia (7×4 = 7+7 → 14, potem 14+14 → 28).</li>
+        <li><strong>Kolejność nie ma znaczenia</strong> (przemienność): 7×3 = 3×7.</li>
+        <li><strong>Dzielenie</strong> – odwróć mnożenie: 24÷6=4, bo 4×6=24.</li>
+      </ul>
+    </section>
+
+    <!-- TABLES -->
+    <section id="tables" class="card" hidden role="region" aria-labelledby="tables-h">
+      <h2 id="tables-h">Tabele – do szybkiego przeglądu</h2>
+      <div class="grid cols-3" id="tables-wrap">
+        <!-- Tabele zostaną wygenerowane JS-em -->
+      </div>
+      <p class="muted">Wskazówka: zacznij od kolumn ×2, ×5, ×10, potem ×9, a na końcu reszta.</p>
+    </section>
+
+    <!-- PRACTICE -->
+    <section id="practice" class="card" hidden role="region" aria-labelledby="practice-h">
+      <h2 id="practice-h">Ćwiczenia – pytanie → odpowiedź</h2>
+      <div class="row">
+        <label class="row" for="mode">
+          Tryb:
+          <select id="mode" class="btn">
+            <option value="mul" selected>Mnożenie</option>
+            <option value="div">Dzielenie</option>
+          </select>
+        </label>
+        <label class="row">Zakres:
+          <select id="range" class="btn">
+            <option value="easy">Łatwy (×1,×2,×5,×10)</option>
+            <option value="mid" selected>Średni (do ×7)</option>
+            <option value="full">Pełny (do ×10)</option>
+            <option value="pro">Pro (do ×12)</option>
+          </select>
+        </label>
+        <button class="btn primary" id="next">Następne pytanie</button>
+      </div>
+
+      <div class="card" style="margin-top:12px; background:#f8fafc">
+        <div class="row">
+          <div class="grow">
+            <div id="question" style="font-size:clamp(22px,4vw,34px); font-weight:800">Kliknij „Następne pytanie”</div>
+          </div>
+          <div>
+            <button class="btn" id="reveal" title="Pokaż odpowiedź">👁 Pokaż</button>
+          </div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <input inputmode="numeric" pattern="[0-9]*" id="answer" placeholder="Wpisz odpowiedź…" aria-label="Twoja odpowiedź">
+          <button class="btn ok" id="check">Sprawdź</button>
+        </div>
+        <div id="feedback" class="muted" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <!-- SPEED TEST -->
+    <section id="speed" class="card" hidden role="region" aria-labelledby="speed-h">
+      <h2 id="speed-h">Test 60 sekund</h2>
+      <p>Policz jak najwięcej przykładów w 60 sekund. Każde pytanie 1 punkt. Błędna odpowiedź = 0 pkt, przechodzimy dalej.</p>
+      <div class="row">
+        <label class="row">Zakres:
+          <select id="speed-range" class="btn">
+            <option value="easy">Łatwy (×1,×2,×5,×10)</option>
+            <option value="mid" selected>Średni (do ×7)</option>
+            <option value="full">Pełny (do ×10)</option>
+            <option value="pro">Pro (do ×12)</option>
+          </select>
+        </label>
+        <label class="row">Tryb:
+          <select id="speed-mode" class="btn">
+            <option value="mul" selected>Mnożenie</option>
+            <option value="div">Dzielenie</option>
+          </select>
+        </label>
+        <button class="btn primary" id="speed-start">Start</button>
+      </div>
+
+      <div class="card" style="margin-top:12px; background:#f8fafc">
+        <div class="row">
+          <div class="grow">
+            <div id="speed-q" style="font-size:clamp(22px,4vw,34px); font-weight:800">Przygotuj się…</div>
+          </div>
+          <div class="stat">⏱ <span id="speed-t">60</span>s</div>
+          <div class="stat">✅ <span id="speed-s">0</span> pkt</div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <input inputmode="numeric" pattern="[0-9]*" id="speed-a" placeholder="Odpowiedź…" aria-label="Twoja odpowiedź (test)">
+          <button class="btn ok" id="speed-check">OK</button>
+          <button class="btn warn" id="speed-skip">Pomiń</button>
+        </div>
+      </div>
+      <p class="muted">Cel: 20+ pkt = świetnie, 30+ pkt = mistrz! Najlepszy wynik zapisze się automatycznie.</p>
+    </section>
+
+    <!-- PARENT -->
+    <section id="parent" class="card" hidden role="region" aria-labelledby="parent-h">
+      <h2 id="parent-h">Dla rodzica / nauczyciela</h2>
+      <ul>
+        <li>Ucz w porcjach: najpierw ×2,×5,×10, potem ×9, na końcu reszta.</li>
+        <li>Powtarzaj codziennie: 10 minut (ćwiczenia + 60 s test).</li>
+        <li>Nie poprawiaj od razu – najpierw dopytaj „jak o tym myślałeś?”.</li>
+        <li>Doceniaj <em>sposób</em> liczenia (np. podwajanie), nie tylko wynik.</li>
+      </ul>
+      <p class="muted">Dane (wyniki, seria dni) są tylko lokalnie w przeglądarce dziecka.</p>
+    </section>
+
+    <footer>
+      <small>© 2025 Prosty trener tabliczki. Działa bez Internetu. Wersja 1.0</small>
+    </footer>
+  </div>
+
+<script>
+// ---------------------------
+// Utility
+// ---------------------------
+const $ = (q, root=document) => root.querySelector(q);
+const $$ = (q, root=document) => Array.from(root.querySelectorAll(q));
+const choice = arr => arr[Math.floor(Math.random()*arr.length)];
+
+// ---------------------------
+// Naive router (tabs)
+// ---------------------------
+$$('nav .tab').forEach(btn => {
+  btn.addEventListener('click', () => go(btn.dataset.target));
+});
+$$('[data-link]').forEach(a => {
+  a.addEventListener('click', (e) => {
+    e.preventDefault();
+    const id = a.getAttribute('href').replace('#','');
+    go(id);
+  })
+});
+function go(id){
+  // update tabs
+  $$('nav .tab').forEach(b => b.setAttribute('aria-current', b.dataset.target===id ? 'page' : 'false'));
+  // show/hide sections
+  ['intro','tricks','tables','practice','speed','parent'].forEach(sec => {
+    const el = document.getElementById(sec);
+    if(!el) return;
+    if(sec===id){ el.hidden = false; el.setAttribute('tabindex','-1'); el.focus({preventScroll:false}); }
+    else{ el.hidden = true; el.removeAttribute('tabindex'); }
+  });
+  // push hash (optional)
+  location.hash = id;
+}
+if(location.hash){
+  const id = location.hash.slice(1);
+  if (['intro','tricks','tables','practice','speed','parent'].includes(id)) go(id);
+}
+
+// ---------------------------
+/** Generowanie tabel (×1..×12) w trzech kolumnach */
+// ---------------------------
+const tablesWrap = $('#tables-wrap');
+const tablesRanges = [
+  {label:'×1 – ×4', from:1, to:4},
+  {label:'×5 – ×8', from:5, to:8},
+  {label:'×9 – ×12', from:9, to:12},
+];
+for(const r of tablesRanges){
+  const card = document.createElement('div');
+  card.className='card';
+  const h = document.createElement('h3');
+  h.textContent = r.label;
+  card.appendChild(h);
+  const tbl = document.createElement('table');
+  tbl.className='tbl';
+  const thead = document.createElement('thead');
+  thead.innerHTML = '<tr><th>a</th><th>×</th><th>b</th><th>=</th><th>wynik</th></tr>';
+  tbl.appendChild(thead);
+  const tb = document.createElement('tbody');
+  for(let a=1;a<=12;a++){
+    for(let b=r.from;b<=r.to;b++){
+      const tr = document.createElement('tr');
+      const cells = [
+        `<td>${a}</td>`,
+        `<td>×</td>`,
+        `<td>${b}</td>`,
+        `<td>=</td>`,
+        `<td><strong>${a*b}</strong></td>`
+      ];
+      tr.innerHTML = cells.join('');
+      tb.appendChild(tr);
+    }
+  }
+  tbl.appendChild(tb);
+  card.appendChild(tbl);
+  tablesWrap.appendChild(card);
+}
+
+// ---------------------------
+// Ćwiczenia (mnożenie/dzielenie)
+// ---------------------------
+const ranges = {
+  easy:[1,2,5,10],
+  mid:[1,2,3,4,5,6,7],
+  full:[1,2,3,4,5,6,7,8,9,10],
+  pro:[1,2,3,4,5,6,7,8,9,10,11,12],
+};
+
+const qEl=$('#question'), ansEl=$('#answer'), fbEl=$('#feedback');
+let currentQ = null;
+
+function makeMul(rangeKey){
+  const factors = ranges[rangeKey];
+  const a = choice(factors);
+  const b = choice(factors);
+  return {type:'mul', a,b, text:`${a} × ${b} = ?`, answer:a*b};
+}
+function makeDiv(rangeKey){
+  const factors = ranges[rangeKey];
+  const a = choice(factors);
+  const b = choice(factors);
+  const prod = a*b;
+  // losowo „prod ÷ a = ?” lub „prod ÷ b = ?”
+  const divideByA = Math.random() < .5;
+  return divideByA
+    ? {type:'div', a:prod, b:a, text:`${prod} ÷ ${a} = ?`, answer:b}
+    : {type:'div', a:prod, b:b, text:`${prod} ÷ ${b} = ?`, answer:a};
+}
+
+function nextQ(){
+  const mode = $('#mode').value;
+  const r = $('#range').value;
+  currentQ = (mode==='mul') ? makeMul(r) : makeDiv(r);
+  qEl.textContent = currentQ.text;
+  ansEl.value='';
+  fbEl.textContent='';
+  ansEl.focus();
+}
+
+$('#next').addEventListener('click', nextQ);
+$('#reveal').addEventListener('click', ()=>{
+  if(!currentQ) return;
+  fbEl.textContent = `Odpowiedź: ${currentQ.answer}`;
+});
+$('#check').addEventListener('click', ()=>{
+  if(!currentQ) return;
+  const v = Number(ansEl.value.trim());
+  if(Number.isNaN(v)){ fbEl.textContent='Wpisz liczbę.'; return; }
+  if(v === currentQ.answer){
+    fbEl.textContent='✅ Dobrze!';
+  }else{
+    fbEl.textContent=`❌ Nie tak. Spróbuj inaczej pomyśleć. (Poprawnie: ${currentQ.answer})`;
+  }
+  // automatycznie przejdź po 0.6s
+  setTimeout(nextQ, 600);
+});
+ansEl.addEventListener('keypress', (e)=>{
+  if(e.key==='Enter') $('#check').click();
+});
+
+// ---------------------------
+// Test na czas (60s)
+// ---------------------------
+let t = 60, timer=null, score=0, speedQ=null;
+const speedQEl=$('#speed-q'), speedAEl=$('#speed-a');
+const speedTEl=$('#speed-t'), speedSEl=$('#speed-s');
+
+function speedMakeQ(){
+  const mode = $('#speed-mode').value;
+  const r = $('#speed-range').value;
+  speedQ = (mode==='mul') ? makeMul(r) : makeDiv(r);
+  speedQEl.textContent = speedQ.text;
+  speedAEl.value='';
+  speedAEl.focus();
+}
+
+function speedStop(save=true){
+  clearInterval(timer); timer=null;
+  if(save) updateStats(score);
+}
+
+$('#speed-start').addEventListener('click',()=>{
+  if(timer) speedStop(false);
+  t=60; score=0;
+  speedTEl.textContent = String(t);
+  speedSEl.textContent = String(score);
+  speedMakeQ();
+  timer = setInterval(()=>{
+    t--; speedTEl.textContent = String(t);
+    if(t<=0) { speedStop(true); speedQEl.textContent=`Koniec! Twój wynik: ${score}`; }
+  }, 1000);
+});
+
+function speedCheck(){
+  if(!speedQ) return;
+  const v = Number(speedAEl.value.trim());
+  if(!Number.isFinite(v)) return;
+  if(v===speedQ.answer){ score++; speedSEl.textContent=String(score); }
+  speedMakeQ();
+}
+
+$('#speed-check').addEventListener('click', speedCheck);
+$('#speed-skip').addEventListener('click', speedMakeQ);
+speedAEl.addEventListener('keypress', (e)=>{ if(e.key==='Enter') speedCheck(); });
+
+// ---------------------------
+// Proste statystyki (localStorage)
+// ---------------------------
+const LS_KEY = 'multrainer_stats_v1';
+
+function readStats(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if(!raw) return {best:0, last:0, streak:0, lastDay:null};
+    return JSON.parse(raw);
+  }catch{ return {best:0, last:0, streak:0, lastDay:null}; }
+}
+function saveStats(s){ localStorage.setItem(LS_KEY, JSON.stringify(s)); }
+function updateStats(newLast){
+  const s = readStats();
+  s.last = newLast;
+  if(newLast > (s.best||0)) s.best = newLast;
+  // streak: jeżeli dzisiaj kolejny dzień względem ostatniego użycia
+  const today = new Date(); today.setHours(0,0,0,0);
+  const lastDay = s.lastDay ? new Date(s.lastDay) : null;
+  const msDay = 24*60*60*1000;
+  if(!lastDay) s.streak = 1;
+  else{
+    const diff = (today - lastDay)/msDay;
+    if(diff === 0) { /* ten sam dzień - nic */ }
+    else if(diff === 1) s.streak = (s.streak||0) + 1;
+    else if(diff > 1) s.streak = 1;
+  }
+  s.lastDay = today.toISOString();
+  saveStats(s);
+  paintStats();
+}
+function paintStats(){
+  const s = readStats();
+  $('#stat-last').textContent = s.last ? String(s.last) : '–';
+  $('#stat-best').textContent = s.best ? String(s.best) : '–';
+  $('#stat-streak').textContent = String(s.streak||0);
+}
+paintStats();
+
+// Ułatwienia: Enter w głównej odpowiedzi w ćwiczeniach i w teście działa.
+// Prefer-reduced-motion: nie ma animacji; layout jest lekki i szybki.
+</script>
+</body>
+</html>
